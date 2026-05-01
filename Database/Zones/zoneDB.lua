@@ -210,7 +210,7 @@ function _ZoneDB:SplitSeasonalQuests()
     if not zoneMap[QuestieDB.sortKeys.SPECIAL] then
         return zoneMap
     end
-    local questsToSplit = zoneMap[QuestieDB.sortKeys.SEASONAL]
+    local questsToSplit = zoneMap[QuestieDB.sortKeys.SEASONAL] or {}
     -- Merging SEASONAL and SPECIAL quests to be split into real groups
     for k, v in pairs(zoneMap[QuestieDB.sortKeys.SPECIAL]) do questsToSplit[k] = v end
 
