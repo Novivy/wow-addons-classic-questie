@@ -1,3 +1,10 @@
+# Update
+
+- To push a new update:
+- Push a new tag, update the version in server-stats.json
+
+
+
 # Questie
 
 [![Discord](https://img.shields.io/badge/discord-Questie-738bd7)](https://discord.gg/s33MAYKeZd)
