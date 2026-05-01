@@ -1,0 +1,36 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Get tag name
+        id: tag
+        run: echo "tag=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+
+      - name: Create zip
+        run: |
+          mkdir -p staging/Questie
+          rsync -av --exclude='.git' --exclude='.github' --exclude='.idea' --exclude='.gitignore' . staging/Questie/
+          cd staging
+          zip -r "../Questie-${{ steps.tag.outputs.tag }}.zip" Questie/
+
+      - name: Create GitHub release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create "${{ steps.tag.outputs.tag }}" \
+            --title "${{ steps.tag.outputs.tag }}" \
+            --latest \
+            "Questie-${{ steps.tag.outputs.tag }}.zip"
