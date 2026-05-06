@@ -280,5 +280,22 @@ end
 
 -- called by the PLAYER_LOGIN event handler
 function QuestieInit:Init()
+    -- If a character was deleted and a new one created with the same name, AceDB will
+    -- load the old character's data because it keys by CharacterName+Realm, not by GUID.
+    -- Detect this by storing the player GUID and comparing it on each login.
+    local currentGUID = UnitGUID("player")
+    if Questie.db.char.playerGUID ~= currentGUID then
+        Questie:Print(Questie:Colorize("[Questie] New character detected with the same name as a previous character. Resetting character data.", "orange"))
+        Questie.db.char.complete = {}
+        Questie.db.char.hidden = {}
+        Questie.db.char.hiddenDailies = { nhc = {}, hc = {}, cooking = {}, fishing = {}, pvp = {} }
+        Questie.db.char.journey = {}
+        Questie.db.char.TrackerHiddenQuests = nil
+        Questie.db.char.TrackerHiddenObjectives = nil
+        Questie.db.char.townsfolk = nil
+        Questie.db.char.townsfolkVersion = nil
+    end
+    Questie.db.char.playerGUID = currentGUID
+
     _QuestieInit:StartStageCoroutine(1)
 end
