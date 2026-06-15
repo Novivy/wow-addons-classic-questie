@@ -81,7 +81,7 @@ function QuestieLib:GetRGBForObjective(objective)
         objective.Needed = objective.required
     end
 
-    if not objective.Collected or type(objective.Collected) ~= "number" then
+    if not objective.Collected or type(objective.Collected) ~= "number" or not objective.Needed or type(objective.Needed) ~= "number" then
         return FloatRGBToHex(0.8, 0.8, 0.8)
     end
     local float = objective.Collected / objective.Needed
