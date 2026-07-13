@@ -373,6 +373,12 @@ function QuestieQuest:AcceptQuest(questId)
         local quest = QuestieDB:GetQuest(questId)
         QuestiePlayer.currentQuestlog[questId] = quest
 
+        if not quest then
+            -- Custom/unknown quest that isn't in Questie's database. Nothing to populate or draw.
+            Questie:Debug(Questie.DEBUG_INFO, "[QuestieQuest]: Accepted Quest:", questId, " Warning: Quest not found in DB, skipping population");
+            return
+        end
+
         TaskQueue:Queue(
             --Get all the Frames for the quest and unload them, the available quest icon for example.
             function() QuestieMap:UnloadQuestFrames(questId) end,
@@ -395,7 +401,8 @@ end
 ---@param questId number
 function QuestieQuest:CompleteQuest(questId)
     QuestiePlayer.currentQuestlog[questId] = nil;
-    local isRepeatable =  mod(QuestieDB.QueryQuestSingle(questId, "specialFlags"), 2) == 1
+    local specialFlags = QuestieDB.QueryQuestSingle(questId, "specialFlags")
+    local isRepeatable = specialFlags ~= nil and mod(specialFlags, 2) == 1
     -- Only quests that are daily quests or aren't repeatable should be marked complete,
     -- otherwise objectives for repeatable quests won't track correctly - #1433
     Questie.db.char.complete[questId] = QuestieDB:IsDailyQuest(questId) or (not isRepeatable);
@@ -1046,10 +1053,10 @@ local function _AddSourceItemObjective(quest)
 end
 
 function QuestieQuest:PopulateObjectiveNotes(quest) -- this should be renamed to PopulateNotes as it also handles finishers now
-    Questie:Debug(Questie.DEBUG_DEVELOP, "[QuestieQuest:PopulateObjectiveNotes]", "Populating objectives for:", quest.Id)
     if (not quest) then
         return
     end
+    Questie:Debug(Questie.DEBUG_DEVELOP, "[QuestieQuest:PopulateObjectiveNotes]", "Populating objectives for:", quest.Id)
 
     if quest:IsComplete() == 1 then
         _AddSourceItemObjective(quest)
@@ -1086,6 +1093,9 @@ end
 
 ---@param quest Quest
 function QuestieQuest:PopulateQuestLogInfo(quest)
+    if (not quest) then
+        return
+    end
     local logID = GetQuestLogIndexByID(quest.Id)
     if logID ~= 0 then
         local _, _, _, _, _, isComplete, _, _, _, _, _, _, _, _, _, isHidden = GetQuestLogTitle(logID)
