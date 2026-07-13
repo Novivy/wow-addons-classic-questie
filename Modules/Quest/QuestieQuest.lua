@@ -525,7 +525,7 @@ function QuestieQuest:GetAllQuestIds()
         end
         if (not isHeader) and (not QuestieDB.QuestPointers[questId]) then
             if not Questie._sessionWarnings[questId] then
-                Questie:Error(l10n("The quest %s is missing from Questie's database, Please report this on GitHub or Discord!", tostring(questId)))
+                Questie:Debug(Questie.DEBUG_DEVELOP, l10n("The quest %s is missing from Questie's database, Please report this on GitHub or Discord!", tostring(questId)))
                 Questie._sessionWarnings[questId] = true
             end
         elseif (not isHeader) and isComplete ~= -1 then
@@ -565,7 +565,7 @@ function QuestieQuest:GetAllQuestIdsNoObjectives()
         end
         if (not isHeader) and (not QuestieDB.QuestPointers[questId]) then
             if not Questie._sessionWarnings[questId] then
-                Questie:Error(l10n("The quest %s is missing from Questie's database, Please report this on GitHub or Discord!", tostring(questId)))
+                Questie:Debug(Questie.DEBUG_DEVELOP, l10n("The quest %s is missing from Questie's database, Please report this on GitHub or Discord!", tostring(questId)))
                 Questie._sessionWarnings[questId] = true
             end
         elseif (not isHeader) then
