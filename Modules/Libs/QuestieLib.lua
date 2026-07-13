@@ -124,8 +124,10 @@ function QuestieLib:GetQuestObjectives(questId)
 
     local questLogIndex = GetQuestLogIndexByID(questId)
     if questLogIndex and questLogIndex ~= 0 then
+        local numLeaderBoards = GetNumQuestLeaderBoards(questLogIndex) or 0
         for index, objective in ipairs(objectives) do
-            if (not objective.finished) then
+            -- Bound by numLeaderBoards so we never query an out-of-range leaderboard index
+            if (not objective.finished) and index <= numLeaderBoards then
                 local _, _, finished = GetQuestLogLeaderBoard(index, questLogIndex)
                 if finished then
                     objective.finished = true
