@@ -102,6 +102,44 @@ function QuestieLib:GetRGBForObjective(objective)
     end
 end
 
+--- Wrapper around C_QuestLog.GetQuestObjectives that fixes exploration / "event" objectives.
+---
+--- On the server (mangos: Player::AreaExploredOrEventHappens) an explored area only sets the
+--- quest slot's QUEST_STATE_COMPLETE bit - it never increments an objective counter. As a result
+--- C_QuestLog.GetQuestObjectives keeps reporting such objectives as "0/1 finished=false" forever,
+--- while the older GetQuestLogLeaderBoard API correctly reports finished=true (it reads the slot bit).
+--- Questie relies on C_QuestLog.GetQuestObjectives for the tracker, completion checks AND the change
+--- hash, so without this overlay an explored objective stays stuck at 0/1 until a reload.
+---
+--- We overlay the authoritative leaderboard 'finished' flag: when it is set we mark the objective
+--- finished and (if it has a required count) bump numFulfilled up to numRequired so every downstream
+--- consumer treats it as complete.
+---@param questId number
+---@return table|nil @The C_QuestLog.GetQuestObjectives result with leaderboard completion overlaid
+function QuestieLib:GetQuestObjectives(questId)
+    local objectives = C_QuestLog.GetQuestObjectives(questId)
+    if not objectives then
+        return nil
+    end
+
+    local questLogIndex = GetQuestLogIndexByID(questId)
+    if questLogIndex and questLogIndex ~= 0 then
+        for index, objective in ipairs(objectives) do
+            if (not objective.finished) then
+                local _, _, finished = GetQuestLogLeaderBoard(index, questLogIndex)
+                if finished then
+                    objective.finished = true
+                    if objective.numRequired and objective.numRequired > 0 then
+                        objective.numFulfilled = objective.numRequired
+                    end
+                end
+            end
+        end
+    end
+
+    return objectives
+end
+
 ---@param questId number @The quest ID
 ---@return boolean
 function QuestieLib:IsResponseCorrect(questId)

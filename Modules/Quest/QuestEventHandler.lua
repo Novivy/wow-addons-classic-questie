@@ -49,6 +49,7 @@ function QuestEventHandler:RegisterEvents()
     eventFrame:RegisterEvent("UNIT_QUEST_LOG_CHANGED")
     eventFrame:RegisterEvent("BANKFRAME_CLOSED")
     eventFrame:RegisterEvent("CHAT_MSG_COMBAT_FACTION_CHANGE")
+    eventFrame:RegisterEvent("MAP_EXPLORATION_UPDATED")
     eventFrame:SetScript("OnEvent", _QuestEventHandler.OnEvent)
 
     _QuestEventHandler:InitQuestLog()
@@ -303,6 +304,15 @@ function _QuestEventHandler:ReputationChange()
     doFullQuestLogScan = true
 end
 
+function _QuestEventHandler:MapExplorationUpdated()
+    Questie:Debug(Questie.DEBUG_DEVELOP, "[Quest Event] MAP_EXPLORATION_UPDATED")
+
+    -- Exploration objectives (e.g. quest 76 "The Jasperlode Mine") don't fire UNIT_QUEST_LOG_CHANGED or
+    -- QUEST_WATCH_UPDATE, only QUEST_LOG_UPDATE. Without arming a full scan here the objective stays frozen
+    -- (e.g. 0/1) on the tracker and map until a reload. See ReputationChange for the same class of problem.
+    doFullQuestLogScan = true
+end
+
 --- Helper function to insert a callback to the questLogUpdateQueue and increase the index
 function _QuestLogUpdateQueue:Insert(callback)
     questLogUpdateQueue[questLogUpdateQueueSize] = callback
@@ -335,5 +345,7 @@ function _QuestEventHandler:OnEvent(event, ...)
         _QuestEventHandler:BankFrameClosed()
     elseif event == "CHAT_MSG_COMBAT_FACTION_CHANGE" then
         _QuestEventHandler:ReputationChange()
+    elseif event == "MAP_EXPLORATION_UPDATED" then
+        _QuestEventHandler:MapExplorationUpdated()
     end
 end

@@ -745,9 +745,11 @@ function QuestieDB:GetQuest(questId) -- /dump QuestieDB:GetQuest(867)
         end
 
         -- validate objectives
+        -- QuestieLib:GetQuestObjectives overlays the leaderboard 'finished' flag so exploration/"event"
+        -- objectives (which never bump the C_QuestLog counter) are recognised as complete here too.
         local complete = 1
-        for _, objective in pairs(C_QuestLog.GetQuestObjectives(self.Id)) do
-            if objective.numRequired and objective.numFulfilled and objective.numRequired ~= objective.numFulfilled then
+        for _, objective in pairs(QuestieLib:GetQuestObjectives(self.Id)) do
+            if (not objective.finished) and objective.numRequired and objective.numFulfilled and objective.numRequired ~= objective.numFulfilled then
                 complete = 0
                 break
             end

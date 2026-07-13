@@ -5,6 +5,8 @@ local QuestieHash = QuestieLoader:CreateModule("QuestieHash")
 local QuestieDB = QuestieLoader:ImportModule("QuestieDB")
 ---@type QuestieQuest
 local QuestieQuest = QuestieLoader:ImportModule("QuestieQuest")
+---@type QuestieLib
+local QuestieLib = QuestieLoader:ImportModule("QuestieLib")
 ---@type l10n
 local l10n = QuestieLoader:ImportModule("l10n")
 ---@type QuestieSerializer
@@ -47,7 +49,10 @@ function QuestieHash:GetQuestHash(questId)
     local data = {
         questId = questId,
         isComplete = QuestieDB:IsComplete(questId),
-        questObjectives = C_QuestLog.GetQuestObjectives(questId),
+        -- Use QuestieLib:GetQuestObjectives so exploration/"event" objectives (which only flip the
+        -- leaderboard 'finished' flag, never the C_QuestLog counter) actually change the hash when
+        -- completed - otherwise the quest is never detected as changed and stays stuck at 0/1.
+        questObjectives = QuestieLib:GetQuestObjectives(questId),
     }
 
     hash = libC:fcs32update(hash, libS:Serialize(data))

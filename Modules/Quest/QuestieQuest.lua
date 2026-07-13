@@ -1251,7 +1251,9 @@ local _has_sent_announce = {}
 ---@param questId number
 function QuestieQuest:GetAllLeaderBoardDetails(questId)
     Questie:Debug(Questie.DEBUG_SPAM, "[QuestieQuest:GetAllLeaderBoardDetails] for questId", questId)
-    local questObjectives = C_QuestLog.GetQuestObjectives(questId)
+    -- QuestieLib:GetQuestObjectives overlays the leaderboard 'finished' flag so exploration/"event"
+    -- objectives report as completed (numFulfilled == numRequired) instead of being stuck at 0/1.
+    local questObjectives = QuestieLib:GetQuestObjectives(questId)
     if not questObjectives then
         -- Some quests just don't have a real objective e.g. 2744
         return nil
