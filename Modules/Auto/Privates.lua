@@ -16,6 +16,8 @@ function _QuestieAuto:AcceptQuestFromGossip(index, availableQuests, modulo)
     end
 end
 
+--- @return boolean @True if a quest was actually selected, so the caller can stop
+--- after the first one instead of firing a select packet for every quest at once.
 function _QuestieAuto:CompleteQuestFromGossip(index, availableQuests, modulo)
     local title = availableQuests[index]
     local isComplete = availableQuests[index + 3]
@@ -23,18 +25,24 @@ function _QuestieAuto:CompleteQuestFromGossip(index, availableQuests, modulo)
     if _QuestieAuto:IsAllowedQuest() and isComplete then
         Questie:Debug(Questie.DEBUG_DEVELOP, "Checking active quest: \"" .. title .. "\"", "index", index)
         SelectGossipActiveQuest(math.floor(index / modulo) + 1)
+        return true
     else
         Questie:Debug(Questie.DEBUG_DEVELOP, "\"" .. title .. "\" is not complete. Index:", index)
     end
+    return false
 end
 
+--- @return boolean @True if GetQuestReward was actually sent, so the caller knows
+--- whether to remember this quest as turned in.
 function _QuestieAuto:TurnInQuest(rewardIndex)
     Questie:Debug(Questie.DEBUG_DEVELOP, "Turn in!")
 
     -- We really want to disable this in instances, mostly to prevent retards from ruining groups.
     if (Questie.db.char.autocomplete and _QuestieAuto:IsAllowedNPC() and _QuestieAuto:IsAllowedQuest()) then
         GetQuestReward(rewardIndex)
+        return true
     end
+    return false
 end
 
 function _QuestieAuto:IsAllowedNPC()
