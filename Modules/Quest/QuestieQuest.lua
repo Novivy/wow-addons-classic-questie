@@ -1247,6 +1247,26 @@ local L_QUEST_ITEMS_NEEDED = QuestieLib:SanitizePattern(QUEST_ITEMS_NEEDED)
 local L_QUEST_OBJECTS_FOUND = QuestieLib:SanitizePattern(QUEST_OBJECTS_FOUND)
 local _has_seen_incomplete = {}
 local _has_sent_announce = {}
+-- Last successfully parsed text of each objective: [questId][objectiveIndex] = text.
+-- The game evicts creature/object names from its cache during a session and C_QuestLog.GetQuestObjectives
+-- then returns the text without the name (e.g. " slain: 0/10"). The name part of an objective never
+-- changes, so the last good text is reused until the game has the name again. Counts stay valid.
+local _lastGoodObjectiveText = {}
+
+---@param questId number
+---@param objective table @entry of GetAllLeaderBoardDetails() with its parsed text
+local function _AnnounceObjectiveProgress(questId, objective)
+    local text = objective.text
+    local completed = objective.numRequired == objective.numFulfilled
+
+    if (not completed) then
+        _has_seen_incomplete[text] = true
+    elseif _has_seen_incomplete[text] and not _has_sent_announce[text] then
+        _has_seen_incomplete[text] = nil
+        _has_sent_announce[text] = true
+        QuestieAnnounce:AnnounceParty(questId, "objective", nil, text, tostring(objective.numFulfilled) .. "/" .. tostring(objective.numRequired))
+    end
+end
 
 ---@param questId number
 function QuestieQuest:GetAllLeaderBoardDetails(questId)
@@ -1259,8 +1279,14 @@ function QuestieQuest:GetAllLeaderBoardDetails(questId)
         return nil
     end
 
+    local lastGoodTexts = _lastGoodObjectiveText[questId]
+    if not lastGoodTexts then
+        lastGoodTexts = {}
+        _lastGoodObjectiveText[questId] = lastGoodTexts
+    end
+
     --Questie:Print(questId)
-    for _, objective in pairs(questObjectives) do
+    for objectiveIndex, objective in pairs(questObjectives) do
         local originalText = objective.text
         if (originalText and (string.sub(originalText,1,1) ~= " ")) then
             local text = originalText
@@ -1300,20 +1326,19 @@ function QuestieQuest:GetAllLeaderBoardDetails(questId)
             if(text ~= nil) then
                 text = strim(text)
                 objective.text = text
-                local completed = objective.numRequired == objective.numFulfilled
-
-                if (not completed) then
-                    _has_seen_incomplete[text] = true
-                elseif _has_seen_incomplete[text] and not _has_sent_announce[text] then
-                    _has_seen_incomplete[text] = nil
-                    _has_sent_announce[text] = true
-                    QuestieAnnounce:AnnounceParty(questId, "objective", nil, text, tostring(objective.numFulfilled) .. "/" .. tostring(objective.numRequired))
-                end
+                lastGoodTexts[objectiveIndex] = text
+                _AnnounceObjectiveProgress(questId, objective)
             else
                 Questie:Print("WARNING! [QuestieQuest]", "Could not split out the objective out of the objective text! Please report the error!", questId, objective.text)
             end
+        elseif lastGoodTexts[objectiveIndex] then
+            -- The game evicted the name from its cache, reuse the last good text
+            objective.text = lastGoodTexts[objectiveIndex]
+            _AnnounceObjectiveProgress(questId, objective)
         else
-            Questie:Error("ERROR! Something went wrong in GetAllLeaderBoardDetails"..tostring(questId).." - "..tostring(objective.text))
+            -- Name not in the game's cache and not seen yet this session. Keep the raw text; once the name
+            -- arrives the quest hash changes and the quest gets updated again with the full text.
+            Questie:Debug(Questie.DEBUG_INFO, "[QuestieQuest:GetAllLeaderBoardDetails] Objective text not cached yet. questId:", questId, "objective:", objectiveIndex, "text:", originalText)
         end
     end
     return questObjectives;
